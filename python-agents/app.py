@@ -279,6 +279,92 @@ def analyze_interview():
     return jsonify(result)
 
 
+@app.route('/api/agent/feedback/comprehensive', methods=['POST'])
+def comprehensive_feedback_analysis():
+    """
+    Comprehensive Career Feedback Analysis
+    
+    Analyzes feedback from various sources (rejection emails, interview feedback,
+    self-reflections, mentor feedback) and provides detailed insights.
+    
+    Request body:
+        - feedback_data: {source, company, role, message, interview_type, stage}
+        - user_id: int (optional, for fetching profile/skills from DB)
+        - user_profile: dict (optional, if not using user_id)
+        - user_skills: list (optional, if not using user_id)
+        - application_history: list (optional)
+    
+    Returns:
+        Comprehensive analysis with identified reasons, skill gaps, 
+        recommendations, learning plan, and readiness score.
+    """
+    data = request.json
+    feedback_data = data.get('feedback_data', data.get('feedback', {}))
+    user_id = data.get('user_id')
+    
+    # Get user context if user_id provided
+    user_profile = data.get('user_profile')
+    user_skills = data.get('user_skills')
+    application_history = data.get('application_history')
+    
+    if user_id and not user_profile:
+        try:
+            user_profile = db.get_user_profile(user_id)
+            user_skills = db.get_user_skills(user_id)
+            application_history = db.get_applications(user_id, limit=10)
+        except Exception as e:
+            print(f"Error fetching user data: {e}")
+    
+    result = feedback_agent.comprehensive_feedback_analysis(
+        feedback_data=feedback_data,
+        user_profile=user_profile,
+        user_skills=user_skills,
+        application_history=application_history
+    )
+    
+    return jsonify(result)
+
+
+@app.route('/api/agent/feedback/analyze-and-save', methods=['POST'])
+def analyze_feedback_and_save():
+    """
+    Analyze feedback and return data formatted for database storage.
+    
+    Request body:
+        - feedback_data: {source, company, role, message}
+        - user_id: int
+    
+    Returns:
+        Analysis result with data_for_save field ready for insertion.
+    """
+    data = request.json
+    feedback_data = data.get('feedback_data', data.get('feedback', {}))
+    user_id = data.get('user_id')
+    
+    if not user_id:
+        return jsonify({"error": "user_id is required"}), 400
+    
+    if not feedback_data.get('message'):
+        return jsonify({"error": "feedback message is required"}), 400
+    
+    # Get user context
+    try:
+        user_profile = db.get_user_profile(user_id)
+        user_skills = db.get_user_skills(user_id)
+    except Exception as e:
+        print(f"Error fetching user data: {e}")
+        user_profile = None
+        user_skills = None
+    
+    result = feedback_agent.analyze_for_save(
+        feedback_data=feedback_data,
+        user_profile=user_profile,
+        user_skills=user_skills
+    )
+    
+    return jsonify(result)
+
+
 @app.route('/api/agent/feedback/patterns', methods=['POST'])
 def detect_patterns():
     """Detect patterns in feedback history"""

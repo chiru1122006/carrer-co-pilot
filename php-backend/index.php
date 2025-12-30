@@ -147,9 +147,16 @@ $router->delete('/applications/{id}', [$applicationsController, 'deleteApplicati
 // Feedback
 $router->get('/feedback', [$feedbackController, 'getFeedback'], ['auth']);
 $router->get('/feedback/stats', [$feedbackController, 'getStats'], ['auth']);
+$router->get('/feedback/analyses', [$feedbackController, 'getAllAnalyses'], ['auth']);
+$router->get('/feedback/patterns', [$feedbackController, 'detectPatterns'], ['auth']);
+$router->get('/feedback/priorities', [$feedbackController, 'getLearningPriorities'], ['auth']);
 $router->get('/feedback/{id}', [$feedbackController, 'getFeedbackItem'], ['auth']);
+$router->get('/feedback/{id}/analysis', [$feedbackController, 'getAnalysis'], ['auth']);
 $router->post('/feedback', [$feedbackController, 'createFeedback'], ['auth']);
+$router->post('/feedback/analyze', [$feedbackController, 'analyzeComprehensive'], ['auth']);
+$router->post('/feedback/analyze-and-save', [$feedbackController, 'analyzeAndSave'], ['auth']);
 $router->put('/feedback/{id}', [$feedbackController, 'updateFeedback'], ['auth']);
+$router->put('/feedback/priorities/{id}', [$feedbackController, 'updateLearningPriority'], ['auth']);
 $router->delete('/feedback/{id}', [$feedbackController, 'deleteFeedback'], ['auth']);
 
 // Resume routes
