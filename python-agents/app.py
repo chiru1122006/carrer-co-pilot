@@ -976,8 +976,12 @@ def view_resume_pdf(resume_id):
             return jsonify({"error": "Resume not found"}), 404
         
         pdf_path = resume_record.get('file_path')
+        print(f"[view_resume_pdf] Resume ID: {resume_id}")
+        print(f"[view_resume_pdf] PDF path from DB: {pdf_path}")
+        print(f"[view_resume_pdf] Path exists: {os.path.exists(pdf_path) if pdf_path else 'N/A'}")
         
         if not pdf_path or not os.path.exists(pdf_path):
+            print(f"[view_resume_pdf] PDF not found, generating new one...")
             # Generate PDF on the fly if not exists
             resume_data = resume_record.get('resume_data')
             result = html_pdf_generator.generate_pdf(
@@ -985,8 +989,14 @@ def view_resume_pdf(resume_id):
                 filename=f"resume_{resume_id}.pdf"
             )
             pdf_path = result.get('file_path')
+            print(f"[view_resume_pdf] Generated new PDF at: {pdf_path}")
+            
+            # Update database with new path
+            if pdf_path and os.path.exists(pdf_path):
+                db.update_resume_pdf_path(resume_id, pdf_path)
         
         if pdf_path and os.path.exists(pdf_path):
+            print(f"[view_resume_pdf] Serving PDF from: {pdf_path}")
             # Send as inline (view in browser) not attachment
             response = send_file(
                 pdf_path,
@@ -995,9 +1005,12 @@ def view_resume_pdf(resume_id):
             response.headers['Content-Disposition'] = f'inline; filename="{os.path.basename(pdf_path)}"'
             return response
         
-        return jsonify({"error": "PDF file not found"}), 404
+        return jsonify({"error": "PDF file not found", "attempted_path": pdf_path}), 404
     
     except Exception as e:
+        print(f"[view_resume_pdf] Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 
